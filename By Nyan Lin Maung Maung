@@ -1,0 +1,645 @@
+2.46 xTaskResumeAll()
+#include <stdio.h>
+#include "FreeRTOS.h"
+#include "task.h"
+ 
+// Task function prototypes
+void vTask1(void* pvParameters);
+void vTask2(void* pvParameters);
+ 
+int main(void)
+{
+	// Create task 1
+    xTaskCreate(vTask1, "Task1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+ 
+	// Create task 2
+    xTaskCreate(vTask2, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+ 
+	// Start the FreeRTOS scheduler
+    vTaskStartScheduler();
+ 
+	// This should never be reached
+	for (;;);
+ 
+	return 0;
+}
+ 
+// Task 1 function
+void vTask1(void* pvParameters)
+{
+	for (;;)
+	{
+        printf("Task 1 is running\n");
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1 second
+	}
+}
+ 
+// Task 2 function
+void vTask2(void* pvParameters)
+{
+	// Suspend task 2 initially
+    vTaskSuspend(NULL);
+ 
+	for (;;)
+	{
+        printf("Task 2 is running\n");
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1 second
+	}
+}
+
+
+
+2.41 ulTaskNotifyTake()
+#include <stdio.h>
+#include "FreeRTOS.h"
+#include "task.h"
+#include "semphr.h"
+ 
+// Task function prototypes
+void vTask1(void* pvParameters);
+void vTask2(void* pvParameters);
+ 
+// Semaphore handle
+SemaphoreHandle_t xSemaphore;
+ 
+int main(void)
+{
+	// Create a semaphore
+    xSemaphore = xSemaphoreCreateBinary();
+ 
+	// Create task 1
+    xTaskCreate(vTask1, "Task1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+ 
+	// Create task 2
+    xTaskCreate(vTask2, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+ 
+	// Start the FreeRTOS scheduler
+    vTaskStartScheduler();
+ 
+	// This should never be reached
+	for (;;);
+ 
+	return 0;
+}
+ 
+// Task 1 function
+void vTask1(void* pvParameters)
+{
+	// Wait for the semaphore
+	xSemaphoreTake(xSemaphore, portMAX_DELAY);
+ 
+	// Task 1 continues here after acquiring the semaphore
+    printf("Task 1 received notification from Task 2\n");
+ 
+	// Task loop
+	for (;;)
+	{
+        // Task does nothing but yield
+        taskYIELD();
+	}
+}
+ 
+// Task 2 function
+void vTask2(void* pvParameters)
+{
+	// Task loop
+	for (;;)
+	{
+        // Delay for 1 second
+        vTaskDelay(pdMS_TO_TICKS(1000));
+ 
+        // Give the semaphore to wake up task 1
+        xSemaphoreGive(xSemaphore);
+	}
+}
+
+
+ 
+2.42 xTaskNotifyWait()
+#include <stdio.h>
+#include "FreeRTOS.h"
+#include "task.h"
+ 
+// Task function prototypes
+void vTask1(void* pvParameters);
+void vTask2(void* pvParameters);
+ 
+// Task handles
+TaskHandle_t xTask1Handle, xTask2Handle;
+ 
+int main(void)
+{
+	// Create task 1
+    xTaskCreate(vTask1, "Task1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, &xTask1Handle);
+ 
+	// Create task 2
+    xTaskCreate(vTask2, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, &xTask2Handle);
+ 
+	// Start the FreeRTOS scheduler
+    vTaskStartScheduler();
+ 
+	// This should never be reached
+	for (;;);
+ 
+	return 0;
+}
+ 
+// Task 1 function
+void vTask1(void* pvParameters)
+{
+	// Wait for notification from task 2
+    ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+ 
+	// Task 1 continues here after receiving the notification
+    printf("Task 1 received notification from Task 2\n");
+ 
+	// Task loop
+	for (;;)
+	{
+        // Task does nothing but yield
+        taskYIELD();
+	}
+}
+ 
+// Task 2 function
+void vTask2(void* pvParameters)
+{
+	// Delay for 1 second
+    vTaskDelay(pdMS_TO_TICKS(1000));
+ 
+	// Send notification to task 1
+	xTaskNotifyGive(xTask1Handle);
+ 
+	// Task 2 continues here after sending the notification
+    printf("Task 2 sent notification to Task 1\n");
+ 
+	// Task loop
+	for (;;)
+	{
+        // Task does nothing but yield
+        taskYIELD();
+	}
+}
+
+
+ 
+2.43 uxTaskPriorityGet()
+#include <stdio.h>
+#include <conio.h>
+ 
+#include "FreeRTOS.h"
+#include "FreeRTOSConfig.h"
+#include "task.h"
+#include "timers.h"
+#include "queue.h"
+#include "semphr.h"
+ 
+void vTask1(void* pvParameters);
+void vTask2(void* pvParameters);
+ 
+int main(void)
+{
+	// Create Task 1
+    xTaskCreate(vTask1,           	// Task function
+        "Task1",         	// Task name
+        configMINIMAL_STACK_SIZE,  // Stack size
+        NULL,            	// Task parameters
+        tskIDLE_PRIORITY + 1,  	// Priority
+        NULL);           	// Task handle
+ 
+	// Create Task 2
+    xTaskCreate(vTask2,           	// Task function
+        "Task2",         	// Task name
+        configMINIMAL_STACK_SIZE,  // Stack size
+        NULL,            	// Task parameters
+        tskIDLE_PRIORITY + 2,  	// Priority
+        NULL);           	// Task handle
+ 
+	// Start the FreeRTOS scheduler
+    vTaskStartScheduler();
+ 
+	// This should never be reached
+	for (;;);
+ 
+	return 0;
+}
+ 
+// Task 1 function
+void vTask1(void* pvParameters)
+{
+	// Add a delay to ensure Task 1 gets CPU time
+    vTaskDelay(pdMS_TO_TICKS(100));
+ 
+	// Get the priority of Task 1
+	UBaseType_t task1Priority = uxTaskPriorityGet(NULL);
+ 
+	// Print the priority of Task 1
+    printf("Task 1 priority: %u\n", task1Priority);
+ 
+	// Task loop
+	for (;;)
+	{
+        // Task 1 does nothing but yield
+        taskYIELD();
+	}
+}
+ 
+// Task 2 function
+void vTask2(void* pvParameters)
+{
+	// Get the priority of Task 2
+	UBaseType_t task2Priority = uxTaskPriorityGet(NULL);
+ 
+	// Print the priority of Task 2
+    printf("Task 2 priority: %u\n", task2Priority);
+ 
+	// Task loop
+	for (;;)
+	{
+        // Task 2 does nothing but yield
+        taskYIELD();
+	}
+}
+
+
+ 
+2.44 vTaskPrioritySet()
+	#include <stdio.h>
+	#include <conio.h>
+ 
+	#include "FreeRTOS.h"
+	#include "FreeRTOSConfig.h"
+	#include "task.h"
+	#include "timers.h"
+	#include "queue.h"
+	#include "semphr.h"
+ 
+void vDynamicPriorityTask(void* pvParameters);
+ 
+int main(void)
+{
+	// Create the dynamic priority task
+    xTaskCreate(vDynamicPriorityTask,         // Task function
+        "DynamicPriorityTask",    	// Task name
+        configMINIMAL_STACK_SIZE,	// Stack size
+        NULL,                    	// Task parameters
+        tskIDLE_PRIORITY + 1,    	// Initial priority (can be changed later)
+        NULL);                   	// Task handle
+ 
+	// Start the FreeRTOS scheduler
+    vTaskStartScheduler();
+ 
+	// This should never be reached
+	for (;;);
+ 
+	return 0;
+}
+ 
+// Task function that changes its priority after a delay
+void vDynamicPriorityTask(void* pvParameters)
+{
+	// Task loop
+	for (;;)
+	{
+        // Print current task priority
+        printf("Current task priority: %d\n", uxTaskPriorityGet(NULL));
+ 
+        // Delay for 2 seconds
+        vTaskDelay(pdMS_TO_TICKS(2000));
+ 
+        // Change task priority to a higher value
+        vTaskPrioritySet(NULL, uxTaskPriorityGet(NULL) + 1);
+ 
+        // Print new task priority
+        printf("New task priority: %d\n", uxTaskPriorityGet(NULL));
+ 
+        // Delay for 2 seconds
+        vTaskDelay(pdMS_TO_TICKS(2000));
+	}
+}
+
+
+2.45 vTaskResume()
+#include <stdio.h>
+#include "FreeRTOS.h"
+#include "task.h"
+ 
+// Task function prototypes
+void vSuspendedTask(void* pvParameters);
+void vResumingTask(void* pvParameters);
+ 
+int main(void)
+{
+	// Create the suspended task
+    xTaskCreate(vSuspendedTask,         // Task function
+        "SuspendedTask",    	// Task name
+        configMINIMAL_STACK_SIZE,	// Stack size
+        NULL,                    	// Task parameters
+        tskIDLE_PRIORITY + 1,    	// Priority
+        NULL);                   	// Task handle
+ 
+	// Create the task that will resume the suspended task
+    xTaskCreate(vResumingTask,         // Task function
+        "ResumingTask",    	// Task name
+        configMINIMAL_STACK_SIZE,	// Stack size
+        NULL,                    	// Task parameters
+        tskIDLE_PRIORITY + 2,    	// Priority
+        NULL);                   	// Task handle
+ 
+	// Start the FreeRTOS scheduler
+    vTaskStartScheduler();
+ 
+	// This should never be reached
+	for (;;);
+ 
+	return 0;
+}
+ 
+// Task function that suspends itself
+void vSuspendedTask(void* pvParameters)
+{
+	// Print a message indicating the task has started
+    printf("SuspendedTask started\n");
+ 
+	// Suspend the task for 5 seconds
+    vTaskDelay(pdMS_TO_TICKS(5000));
+ 
+	// Print a message indicating the task is being resumed
+    printf("SuspendedTask is being resumed\n");
+ 
+	// Resume itself
+    vTaskResume(NULL);
+ 
+	// Task loop
+	for (;;)
+	{
+        // Task does nothing but yield
+        taskYIELD();
+	}
+}
+ 
+// Task function that does nothing
+void vResumingTask(void* pvParameters)
+{
+	// Print a message indicating the task has started
+    printf("ResumingTask started\n");
+ 
+	// Task loop
+	for (;;)
+	{
+        // Task does nothing but yield
+        taskYIELD();
+	}
+}
+
+
+2.47 xTaskResumeFromISR()
+#include <stdio.h>
+#include "FreeRTOS.h"
+#include "task.h"
+ 
+// Task function prototype
+void vSuspendedTask(void* pvParameters);
+ 
+// Simulated interrupt handler
+void vSimulatedISR(void);
+ 
+// Task handle
+TaskHandle_t xTaskToResume = NULL;
+ 
+int main(void)
+{
+	// Create the suspended task
+    xTaskCreate(vSuspendedTask,          // Task function
+        "SuspendedTask",    	// Task name
+        configMINIMAL_STACK_SIZE,  // Stack size
+        NULL,                 	// Task parameters
+        tskIDLE_PRIORITY + 1, 	// Priority
+        &xTaskToResume);      	// Task handle
+ 
+	// Simulate an interrupt to resume the suspended task
+    vSimulatedISR();
+ 
+	// Start the FreeRTOS scheduler
+    vTaskStartScheduler();
+ 
+	// This should never be reached
+	for (;;);
+ 
+	return 0;
+}
+ 
+// Task function that prints a message
+void vSuspendedTask(void* pvParameters)
+{
+	// Print a message indicating the task has started
+    printf("SuspendedTask started\n");
+ 
+	// Task loop
+	for (;;)
+	{
+        // Task does nothing but yield
+        taskYIELD();
+	}
+}
+ 
+// Simulated interrupt handler that resumes a suspended task
+void vSimulatedISR(void)
+{
+	// Resume the suspended task from the ISR
+	BaseType_t xTaskResumed = xTaskResumeFromISR(xTaskToResume);
+ 
+	if (xTaskResumed == pdTRUE)
+	{
+        printf("Task resumed from ISR\n");
+	}
+	else
+	{
+        printf("Failed to resume task from ISR\n");
+	}
+}
+ 
+ 
+ 
+2.48 vTaskSetApplicationTaskTag()
+#include <stdio.h>
+#include "FreeRTOS.h"
+#include "task.h"
+ 
+// Task function prototypes
+void vTaggedTask(void* pvParameters);
+ 
+int main(void)
+{
+	// Create the tagged task
+    xTaskCreate(vTaggedTask,              // Task function
+        "TaggedTask",         	// Task name
+        configMINIMAL_STACK_SIZE,// Stack size
+        NULL,                 	// Task parameters
+        tskIDLE_PRIORITY + 1, 	// Priority
+        NULL);                	// Task handle
+ 
+	// Start the FreeRTOS scheduler
+    vTaskStartScheduler();
+ 
+	// This should never be reached
+	for (;;);
+ 
+	return 0;
+}
+ 
+void vTaggedTask(void* pvParameters)
+{
+    printf("Task is tagged!\n");
+ 
+	// Task loop
+	for (;;)
+	{
+       
+        taskYIELD();
+	}
+}
+
+ 
+ 
+2.49 vTaskSetThreadLocalStoragePointer()
+#include <stdio.h>
+#include <stdlib.h> // Include for rand() and srand()
+#include <time.h>   // Include for seeding srand()
+ 
+#include "FreeRTOS.h"
+#include "task.h"
+ 
+// Task function prototype
+void vTaskWithTLS(void* pvParameters);
+ 
+int main(void)
+{
+	// Seed the random number generator
+    srand(time(NULL));
+ 
+	// Create the task with thread-local storage (TLS)
+    xTaskCreate(vTaskWithTLS,               // Task function
+        "TaskWithTLS",         	// Task name
+        configMINIMAL_STACK_SIZE,  // Stack size
+        NULL,                  	// Task parameters
+        tskIDLE_PRIORITY + 1,  	// Priority
+        NULL);                 	// Task handle (not used in this example)
+ 
+	// Start the FreeRTOS scheduler
+    vTaskStartScheduler();
+ 
+	// This should never be reached
+	for (;;);
+ 
+	return 0;
+}
+ 
+// Task function that uses thread-local storage (TLS)
+void vTaskWithTLS(void* pvParameters)
+{
+	// Define a thread-local storage variable and set it to a random number
+	int tlsValue = rand() % 100; // Generates a random number between 0 and 99
+ 
+	// Print the value of the thread-local storage variable
+    printf("Thread-local storage value: %d\n", tlsValue);
+ 
+	// Task loop
+	for (;;)
+	{
+        // Task does nothing but yield
+        taskYIELD();
+	}
+}
+
+
+2.50 vTaskSetTimeOutState()
+#include <stdio.h>
+#include "FreeRTOS.h"
+#include "task.h"
+ 
+// Task function prototypes
+void vTask1(void* pvParameters);
+void vTask2(void* pvParameters);
+ 
+int main(void)
+{
+	// Create task 1
+    xTaskCreate(vTask1, "Task1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+ 
+	// Create task 2
+    xTaskCreate(vTask2, "Task2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+ 
+	// Start the FreeRTOS scheduler
+    vTaskStartScheduler();
+ 
+	// This should never be reached
+	for (;;);
+ 
+	return 0;
+}
+ 
+// Task 1 function
+void vTask1(void* pvParameters)
+{
+	const TickType_t xDelay = pdMS_TO_TICKS(1000); // 1000 milliseconds delay
+ 
+	for (;;)
+	{
+        printf("Task 1 is running\n");
+        vTaskDelay(xDelay); // Delay for 1000 milliseconds
+	}
+}
+ 
+// Task 2 function
+void vTask2(void* pvParameters)
+{
+	const TickType_t xDelay = pdMS_TO_TICKS(500); // 500 milliseconds delay
+ 
+	for (;;)
+	{
+        printf("Task 2 is running\n");
+        vTaskDelay(xDelay); // Delay for 500 milliseconds
+	}
+}
+
+
+2.51  vTaskStartScheduler()
+#include <stdio.h>
+#include "FreeRTOS.h"
+#include "task.h"
+ 
+// Task function prototype
+void vTaskFunction(void* pvParameters);
+ 
+int main(void)
+{
+	// Create a task
+    xTaskCreate(vTaskFunction,         // Task function
+        "Task",            	// Task name
+        configMINIMAL_STACK_SIZE, // Stack size
+        NULL,              	// Task parameters
+        tskIDLE_PRIORITY + 1,  // Priority
+        NULL);             	// Task handle (not used in this example)
+ 
+	// Start the FreeRTOS scheduler
+    vTaskStartScheduler();
+ 
+	// This should never be reached
+	for (;;);
+ 
+	return 0;
+}
+ 
+// Task function
+void vTaskFunction(void* pvParameters)
+{
+	// Task loop
+	for (;;)
+	{
+        printf("Task is running\n");
+ 
+        // Delay for 1 second
+        vTaskDelay(pdMS_TO_TICKS(1000));
+	}
+}
