@@ -1,0 +1,630 @@
+2.11 VTaskDelayUntil
+code : #include <FreeRTOS.h>
+#include <task.h>
+#include <stdio.h>
+
+// Define the stack size and priority of the tasks
+#define STACK_SIZE 200
+#define TASK1_PRIORITY 1
+#define TASK2_PRIORITY 2
+
+// Task handles
+TaskHandle_t task1Handle = NULL;
+TaskHandle_t task2Handle = NULL;
+
+// Function prototypes
+void vTask1(void* pvParameters);
+void vTask2(void* pvParameters);
+
+int main(void)
+{
+    // Create the tasks
+    xTaskCreate(vTask1, "Task1", STACK_SIZE, NULL, TASK1_PRIORITY, &task1Handle);
+    xTaskCreate(vTask2, "Task2", STACK_SIZE, NULL, TASK2_PRIORITY, &task2Handle);
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+    // The program should never reach here as the scheduler is now running
+    for (;;);
+
+    return 0;
+}
+
+void vTask1(void* pvParameters)
+{
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = 1000 / portTICK_PERIOD_MS;
+
+    // Initialize the xLastWakeTime variable with the current time
+    xLastWakeTime = xTaskGetTickCount();
+
+    for (;;)
+    {
+        // Print a message
+        printf("Task 1 is running\n");
+
+        // Delay for a period
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    }
+}
+
+void vTask2(void* pvParameters)
+{
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = 500 / portTICK_PERIOD_MS;
+
+    // Initialize the xLastWakeTime variable with the current time
+    xLastWakeTime = xTaskGetTickCount();
+
+    for (;;)
+    {
+        // Print a message
+        printf("Task 2 is running\n");
+
+        // Delay for a period
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    }
+}
+
+
+
+2.12 VTaskDelete()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+void TaskFunction(void* pvParameters);
+
+int main(void) {
+    printf("Starting FreeRTOS application\n");
+
+    if (xTaskCreate(TaskFunction, "Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL) != pdPASS) {
+        printf("Task creation failed!\n");
+        return 1; 
+    }
+
+    vTaskStartScheduler();
+
+    printf("Failed to start the scheduler. Out of heap memory?\n");
+    return 2; 
+}
+
+void TaskFunction(void* pvParameters) {
+    (void) pvParameters; 
+    vTaskDelete(NULL);
+
+    for (;;);
+}
+
+
+
+
+
+2.13 TaskDisable_INTERRUPTS()
+code : #include <FreeRTOS.h>
+#include <task.h>
+#include <stdio.h>
+
+// Define the stack size and priority of the tasks
+#define STACK_SIZE 200
+#define TASK1_PRIORITY 1
+#define TASK2_PRIORITY 2
+
+// Task handles
+TaskHandle_t task1Handle = NULL;
+TaskHandle_t task2Handle = NULL;
+
+// Function prototypes
+void vTask1(void *pvParameters);
+void vTask2(void *pvParameters);
+
+int main(void)
+{
+    // Create the tasks
+    xTaskCreate(vTask1, "Task1", STACK_SIZE, NULL, TASK1_PRIORITY, &task1Handle);
+    xTaskCreate(vTask2, "Task2", STACK_SIZE, NULL, TASK2_PRIORITY, &task2Handle);
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+    // The program should never reach here as the scheduler is now running
+    for (;;);
+
+    return 0;
+}
+
+void vTask1(void *pvParameters)
+{
+    for (;;)
+    {
+        // Print a message
+        printf("Task 1 is running and will disable interrupts\n");
+
+        // Disable interrupts
+        taskDISABLE_INTERRUPTS();
+
+        // Perform critical section operations
+        printf("Task 1 is performing critical section operations\n");
+
+        // Simulate some work in the critical section
+        for (volatile int i = 0; i < 1000000; i++);
+
+        // Enable interrupts
+        taskENABLE_INTERRUPTS();
+
+        // Print a message
+        printf("Task 1 has re-enabled interrupts\n");
+
+        // Simulate some work outside the critical section
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+void vTask2(void *pvParameters)
+{
+    for (;;)
+    {
+        // Print a message
+        printf("Task 2 is running\n");
+
+        // Simulate some work
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+
+
+
+2.14 Taskenter_Critical()
+code : #include <FreeRTOS.h>
+#include <task.h>
+#include <stdio.h>
+
+// Define the stack size and priority of the tasks
+#define STACK_SIZE 200
+#define TASK1_PRIORITY 1
+#define TASK2_PRIORITY 2
+
+// Task handles
+TaskHandle_t task1Handle = NULL;
+TaskHandle_t task2Handle = NULL;
+
+// Function prototypes
+void vTask1(void *pvParameters);
+void vTask2(void *pvParameters);
+
+int main(void)
+{
+    // Create the tasks
+    xTaskCreate(vTask1, "Task1", STACK_SIZE, NULL, TASK1_PRIORITY, &task1Handle);
+    xTaskCreate(vTask2, "Task2", STACK_SIZE, NULL, TASK2_PRIORITY, &task2Handle);
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+    // The program should never reach here as the scheduler is now running
+    for (;;);
+
+    return 0;
+}
+
+void vTask1(void *pvParameters)
+{
+    for (;;)
+    {
+        // Print a message
+        printf("Task 1 is running and will enter critical section\n");
+
+        // Enter critical section
+        taskENTER_CRITICAL();
+
+        // Perform critical section operations
+        printf("Task 1 is performing critical section operations\n");
+
+        // Simulate some work in the critical section
+        for (volatile int i = 0; i < 1000000; i++);
+
+        // Exit critical section
+        taskEXIT_CRITICAL();
+
+        // Print a message
+        printf("Task 1 has exited critical section\n");
+
+        // Simulate some work outside the critical section
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+void vTask2(void *pvParameters)
+{
+    for (;;)
+    {
+        // Print a message
+        printf("Task 2 is running\n");
+
+        // Simulate some work
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+2.15 TaskENTER_CRITICAL_FROM_ISR()
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "semphr.h"
+
+// Define a queue handle
+QueueHandle_t xQueue;
+
+// ISR Handler
+void vAnISRHandler(void)
+{
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    uint32_t ulValueToSend = 100;
+    UBaseType_t uxSavedInterruptStatus;
+
+    // Enter critical section from ISR
+    uxSavedInterruptStatus = taskENTER_CRITICAL_FROM_ISR();
+    
+    // Perform operations that need to be protected
+    xQueueSendFromISR(xQueue, &ulValueToSend, &xHigherPriorityTaskWoken);
+    
+    // Exit critical section from ISR
+    taskEXIT_CRITICAL_FROM_ISR(uxSavedInterruptStatus);
+
+    // Perform a context switch if necessary
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+// Task to receive data from the queue
+void vTaskFunction(void *pvParameters)
+{
+    uint32_t ulReceivedValue;
+
+    for (;;)
+    {
+        // Wait to receive data from the queue
+        if (xQueueReceive(xQueue, &ulReceivedValue, portMAX_DELAY) == pdPASS)
+        {
+            // Process the received data
+            printf("Received value: %d\n", ulReceivedValue);
+        }
+    }
+}
+
+int main(void)
+{
+    // Create a queue capable of containing 10 uint32_t values
+    xQueue = xQueueCreate(10, sizeof(uint32_t));
+
+    if (xQueue != NULL)
+    {
+        // Create a task to receive data from the queue
+        xTaskCreate(vTaskFunction, "Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+
+        // Start the scheduler
+        vTaskStartScheduler();
+    }
+
+    // If all is well, the scheduler will now be running, and the following line will never be reached.
+    for (;;);
+}
+2.16 TaskExit_CRITICAL()
+#include <FreeRTOS.h>
+#include <task.h>
+
+
+// Function prototypes
+void vTask1(void *pvParameters);
+
+
+int main(void)
+{
+    // Create the task
+    xTaskCreate(vTask1, "Task 1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, NULL);
+
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+
+    // If all is well, the scheduler will now be running, and the following line will never be reached.
+    for (;;);
+}
+
+
+void vTask1(void *pvParameters)
+{
+    // Variable to demonstrate a shared resource
+    static int sharedResource = 0;
+
+
+    for (;;)
+    {
+        // Enter critical section
+        taskENTER_CRITICAL();
+
+
+        // Access shared resource
+        sharedResource++;
+        // Perform some operations
+        // ...
+
+
+        // Exit critical section
+        taskEXIT_CRITICAL();
+
+
+        // Optional delay to simulate periodic task execution
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+2.17 TaskExit_CRITICAL_FROM_ISR()
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+#include "semphr.h"
+
+
+// Function prototypes
+void vTaskFunction(void *pvParameters);
+void vISR_Handler(void);
+
+
+// Global variables
+QueueHandle_t xQueue;
+
+
+int main(void)
+{
+    // Initialize hardware and peripherals here
+
+
+    // Create a queue
+    xQueue = xQueueCreate(10, sizeof(int));
+    if (xQueue == NULL)
+    {
+        // Queue was not created and must not be used.
+        while(1);
+    }
+
+
+    // Create a task
+    xTaskCreate(vTaskFunction, "Task 1", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+
+    // If all is well, the scheduler will now be running, and the following line
+    // will never be reached. If the following line does execute, then there was
+    // insufficient FreeRTOS heap memory available for the idle and/or timer tasks
+    // to be created. See the memory management section on the FreeRTOS web site
+    // for more details.
+    for (;;);
+}
+
+
+void vTaskFunction(void *pvParameters)
+{
+    int valueToSend = 0;
+    while (1)
+    {
+        // Send a value to the queue
+        xQueueSend(xQueue, &valueToSend, portMAX_DELAY);
+
+
+        // Increment the value to send
+        valueToSend++;
+
+
+        // Simulate some work by delaying for 500ms
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+
+
+// Simulated ISR
+void vISR_Handler(void)
+{
+    static BaseType_t xHigherPriorityTaskWoken;
+    int receivedValue;
+
+
+    // Enter critical section
+    UBaseType_t uxSavedInterruptStatus = taskENTER_CRITICAL_FROM_ISR();
+
+
+    // Receive from the queue
+    if (xQueueReceiveFromISR(xQueue, &receivedValue, &xHigherPriorityTaskWoken) != pdFALSE)
+    {
+        // Process the received value (here simply print it)
+        printf("Received value: %d\n", receivedValue);
+    }
+
+
+    // Exit critical section
+    taskEXIT_CRITICAL_FROM_ISR(uxSavedInterruptStatus);
+
+
+    // If xHigherPriorityTaskWoken was set to true, a context switch should be requested.
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+
+// Simulate triggering the ISR
+void vTriggerISR(void)
+{
+    // Normally, ISRs are triggered by hardware events.
+    // Here we simply call the ISR handler directly to simulate an interrupt.
+    vISR_Handler()
+}
+2.18 XTaskGetApplicationTaskTag()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task hook function prototype
+void vTaskHook(void* pvParameter);
+
+// Task function prototypes
+void vTask1(void* pvParameters);
+void vTask2(void* pvParameters);
+
+int main(void)
+{
+    // Create tasks
+    xTaskCreate(vTask1, "Task 1", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+    xTaskCreate(vTask2, "Task 2", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, NULL);
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+    // Should never reach here
+    for (;;);
+}
+
+// Task hook function
+void vTaskHook(void* pvParameter)
+{
+    // Get the current task handle
+    TaskHandle_t xHandle = xTaskGetCurrentTaskHandle();
+
+    // Get the task hook function assigned to the current task
+    TaskHookFunction_t xHookFunction = xTaskGetApplicationTaskTag(xHandle);
+
+    // Check if a hook function is assigned
+    if (xHookFunction != NULL)
+    {
+        // Call the hook function
+        xHookFunction(pvParameter);
+    }
+}
+
+// Task 1 function
+void vTask1(void* pvParameters)
+{
+    // Assign a task hook function to this task
+    vTaskSetApplicationTaskTag(NULL, vTaskHook);
+
+    for (;;)
+    {
+        // Task 1 code
+        printf("Task 1 running\n");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+// Task 2 function
+void vTask2(void* pvParameters)
+{
+    for (;;)
+    {
+        // Task 2 code
+        printf("Task 2 running\n");
+        vTaskDelay(pdMS_TO_TICKS(2000));
+    }
+}
+2.19 XTaskGetCurrentTaskHandle()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+
+// Task function that prints task information
+void vTaskFunction(void *pvParameters) {
+    TaskHandle_t xTaskHandle = xTaskGetCurrentTaskHandle();
+    const char *pcTaskName = pcTaskGetName(NULL);
+    UBaseType_t uxTaskPriority = uxTaskPriorityGet(NULL);
+    
+    for (;;) {
+        printf("Task Name: %s, Priority: %d, Handle: %p\n", pcTaskName, uxTaskPriority, xTaskHandle);
+        vTaskDelay(pdMS_TO_TICKS(1000));  // Delay for 1 second
+    }
+}
+
+
+int main(void) {
+    TaskHandle_t xTask1, xTask2, xTask3;
+    
+    // Create tasks with different priorities
+    xTaskCreate(vTaskFunction, "Task 1", configMINIMAL_STACK_SIZE, NULL, 1, &xTask1);
+    xTaskCreate(vTaskFunction, "Task 2", configMINIMAL_STACK_SIZE, NULL, 2, &xTask2);
+    xTaskCreate(vTaskFunction, "Task 3", configMINIMAL_STACK_SIZE, NULL, 3, &xTask3);
+    
+    // Start the scheduler
+    vTaskStartScheduler();
+    
+    // The program should never reach here
+    for (;;);
+    return 0;
+}
+2.20 XTaskGetIdleTaskHandle()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+
+// Task function that prints task information
+void vTaskFunction(void *pvParameters) {
+    TaskHandle_t xIdleTaskHandle = xTaskGetIdleTaskHandle();
+    const char *pcTaskName = pcTaskGetName(NULL);
+    UBaseType_t uxTaskPriority = uxTaskPriorityGet(NULL);
+    
+    for (;;) {
+        printf("Task Name: %s, Priority: %d, Idle Task Handle: %p\n", pcTaskName, uxTaskPriority, xIdleTaskHandle);
+        vTaskDelay(pdMS_TO_TICKS(1000));  // Delay for 1 second
+    }
+}
+
+
+int main(void) {
+    TaskHandle_t xTask1, xTask2, xTask3;
+    
+    // Create tasks with different priorities
+    xTaskCreate(vTaskFunction, "Task 1", configMINIMAL_STACK_SIZE, NULL, 1, &xTask1);
+    xTaskCreate(vTaskFunction, "Task 2", configMINIMAL_STACK_SIZE, NULL, 2, &xTask2);
+    xTaskCreate(vTaskFunction, "Task 3", configMINIMAL_STACK_SIZE, NULL, 3, &xTask3);
+    
+    // Start the scheduler
+    vTaskStartScheduler();
+    
+    // The program should never reach here
+    for (;;);
+    return 0;
+}
+2.54. VTaskSuspendAll()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+
+// Task function that suspends and resumes scheduling
+void vTaskFunction(void *pvParameters) {
+    for (;;) {
+        vTaskSuspendAll();  // Suspend task scheduling
+        printf("Task Suspended\n");
+        vTaskDelay(pdMS_TO_TICKS(2000));  // Delay for 2 seconds
+        xTaskResumeAll();  // Resume task scheduling
+        printf("Task Resumed\n");
+        vTaskDelay(pdMS_TO_TICKS(2000));  // Delay for 2 seconds
+    }
+}
+
+
+int main(void) {
+    TaskHandle_t xTask1, xTask2, xTask3;
+    
+    // Create tasks
+    xTaskCreate(vTaskFunction, "Task 1", configMINIMAL_STACK_SIZE, NULL, 1, &xTask1);
+    xTaskCreate(vTaskFunction, "Task 2", configMINIMAL_STACK_SIZE, NULL, 2, &xTask2);
+    xTaskCreate(vTaskFunction, "Task 3", configMINIMAL_STACK_SIZE, NULL, 3, &xTask3);
+    
+    // Start the scheduler
+    vTaskStartScheduler();
+    
+    // The program should never reach here
+    for (;;);
+    return 0;
+}
+
