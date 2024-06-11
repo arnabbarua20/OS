@@ -1,0 +1,309 @@
+API Name:
+2.1. portSWITCH_TO_USER_MODE()	1
+2.2. vTaskAllocateMPURegions()	1
+2.3. xTaskAbortDelay()	1
+2.4.xTaskCallApplicationTaskHook()	2
+2.5. xTaskCheckFortimeOut()	4
+2.6. xTaskCreate()	5
+2.7. xTaskCreateStatic()	6
+2.8. xTaskCreateRestricted()	7
+2.9. vTaskDelay()	7
+2.10. vTaskDelayUntil()	8
+2.53. vTaskSuspend()	9
+By JeongHun Song
+2.1. portSWITCH_TO_USER_MODE()		
+don’t working need MPU port
+
+2.2. vTaskAllocateMPURegions()		
+don’t working need MPU port
+
+2.3. xTaskAbortDelay() 
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+void vAbortDelayTask(void* pvParameters) {
+           
+        const TickType_t xDelay1000ms = pdMS_TO_TICKS(1000);
+        BaseType_t xAbortSelf = pdFALSE;
+
+        for (;;)
+        {
+            
+            vTaskDelay(xDelay1000ms);
+
+            if (xAbortSelf == pdFALSE)
+            {
+                xAbortSelf = pdTRUE;
+            }
+            else
+            {
+                
+                xTaskAbortDelay(vAbortDelayTask);
+                
+                xAbortSelf = pdFALSE;
+                printf("Task self-aborted delay. 202010114 SongJeongHun\n");
+            }
+        }
+    
+}
+int main(void) {
+   
+  
+    xTaskCreate(vAbortDelayTask, "Second Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 2, NULL);
+    
+
+    vTaskStartScheduler();
+
+    for (;;) {    }
+
+    return 0;
+}
+
+void vApplicationGetIdleTaskMemory(StaticTask_t** ppxIdleTaskTCBBuffer, StackType_t** ppxIdleTaskStackBuffer, uint32_t* pulIdleTaskStackSize)
+{
+
+    static StaticTask_t xIdleTaskTCB;
+    static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE];
+
+    *ppxIdleTaskTCBBuffer = &xIdleTaskTCB;
+
+    *ppxIdleTaskStackBuffer = uxIdleTaskStack;
+
+    *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
+}
+
+
+
+
+2.4.xTaskCallApplicationTaskHook()
+#define traceTASK_SWITCHED_OUT() xTaskCallApplicationTaskHook(pxCurrentTCB, 0)
+
+void xWriteTrace(const char* pcTaskName) {
+
+    printf("Task switched out: %s\n", pcTaskName); }
+
+static BaseType_t prvExampleTaskHook(void* pvParameter) {
+
+    TaskHandle_t xTaskHandle = xTaskGetCurrentTaskHandle();
+
+    const char* pcTaskName = pcTaskGetName(xTaskHandle);
+
+    xWriteTrace(pcTaskName);
+
+    return 0; }
+
+void xHookTask(void* pvParameters) {
+    
+    vTaskSetApplicationTaskTag(NULL, prvExampleTaskHook);
+
+    for (;;) {
+
+        printf("First task is going to sleep.\n");
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        printf("Hook task running\n");
+        printf("202010114 Song JeongHun\n");
+        vTaskDelay(200);  }
+}
+
+int main(void) {
+      xTaskCreate(xHookTask, "Task Hook", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, &xFirstTaskHandle);
+    
+     vTaskStartScheduler();
+
+    for (;;) {    }
+
+    return 0;
+}
+
+
+
+2.5. xTaskCheckFortimeOut() 
+void vCheckTimeOutTask(void* pvParameters) {
+    TimeOut_t xTimeOut;
+    TickType_t xTicksToWait = pdMS_TO_TICKS(5000); 
+
+    vTaskSetTimeOutState(&xTimeOut);
+    printf("202010114 Song JeongHun\n");
+    printf("Check timeout task starting...\n");
+
+    while (1) {
+        
+        printf("Check timeout task working...\n");
+        printf("202010114 SongJeongHun\n");
+
+        vTaskDelay(pdMS_TO_TICKS(1000));
+
+        if (xTaskCheckForTimeOut(&xTimeOut, &xTicksToWait) != pdFALSE) {
+            printf("Check timeout task timed out.\n");
+            printf("202010114 SongJeongHun\n");
+            
+            break;
+        }
+    }
+    vTaskDelete(NULL);
+}
+
+int main(void) {
+       xTaskCreate(vCheckTimeOutTask, "Check Timeout Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 3, &xCheckTimeOutTaskHandle);
+ 
+      vTaskStartScheduler();
+    for (;;) {    }
+    return 0;
+}
+
+
+2.6. xTaskCreate() 
+void vTaskCreate(void* pvParameters) {
+    const char* pcTaskName = (const char*)pvParameters;
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = 1000 / portTICK_PERIOD_MS;
+
+    xLastWakeTime = xTaskGetTickCount();
+
+    for (;;) {
+        
+        printf("202010114 Song JeongHun\n");
+        printf("%s\n", pcTaskName);
+
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    }
+}
+
+int main(void) {
+       xTaskCreate(vTaskCreate, "Task Create", configMINIMAL_STACK_SIZE, (void*)"Task Create is running", tskIDLE_PRIORITY + 4, NULL);
+    vTaskStartScheduler();
+
+    for (;;) {    }
+
+    return 0;
+}
+
+
+
+2.7. xTaskCreateStatic()  
+#define STACK_SIZE 128
+static StackType_t xStack[STACK_SIZE];
+static StaticTask_t xTaskBuffer;
+
+void vStaticCreateTask(void* pvParameters)
+{
+    const char* msg = "Hello from Static Create Task!\r\n";
+    for (;;)
+    {
+        printf("%s", msg);
+        printf("202010114 SongJeongHun\n");
+        vTaskDelay(pdMS_TO_TICKS(2000)); 
+    }
+}
+
+void vApplicationGetIdleTaskMemory(StaticTask_t** ppxIdleTaskTCBBuffer, StackType_t** ppxIdleTaskStackBuffer, uint32_t* pulIdleTaskStackSize)
+{
+    
+    static StaticTask_t xIdleTaskTCB;
+    static StackType_t uxIdleTaskStack[configMINIMAL_STACK_SIZE];
+
+    *ppxIdleTaskTCBBuffer = &xIdleTaskTCB;
+
+    *ppxIdleTaskStackBuffer = uxIdleTaskStack;
+
+    *pulIdleTaskStackSize = configMINIMAL_STACK_SIZE;
+}
+int main(void) {
+    TaskHandle_t xHandle = xTaskCreateStatic(vStaticCreateTask, "Static Create Task", STACK_SIZE, NULL, tskIDLE_PRIORITY + 5, xStack, &xTaskBuffer);
+    
+    vTaskStartScheduler();
+
+    
+    for (;;) {    }
+
+    return 0;
+}
+
+	
+2.8. xTaskCreateRestricted()  	
+don’t working need MPU port
+
+2.9. vTaskDelay()  
+void vDelayTask(void* pvParameters)
+{
+    const char* msg = "Delay by 5s Task!\r\n";
+    for (;;)
+    {
+        printf("%s", msg);
+        printf("202010114 SongJeongHun\n");
+        vTaskDelay(pdMS_TO_TICKS(5000)); 
+    }
+}
+int main(void) {
+    //xTaskCreate(vDelayTask, "Delay Task", configMINIMAL_STACK_SIZE, NULL, 
+    vTaskStartScheduler();
+
+    for (;;) {    }
+    return 0;}
+
+
+2.10. vTaskDelayUntil()  
+void vTaskDelayUntilTask(void* pvParameters)
+{
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = pdMS_TO_TICKS(3000);  
+    xLastWakeTime = xTaskGetTickCount();
+
+    for (;;)
+    {
+        printf("vTaskDelayUntil task running at %d ticks 202010114 SongJeongHun\n", xLastWakeTime);
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+    }
+}
+
+int main(void) {
+    xTaskCreate(vTaskDelayUntilTask, "DelayUntil Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 6, NULL);
+
+    vTaskStartScheduler();
+
+    for (;;) {    }
+
+    return 0;
+}
+
+2.53. vTaskSuspend()
+TaskHandle_t xTask1Handle = NULL;
+TaskHandle_t xTask2Handle = NULL;
+
+void vTask1(void* pvParameters) {
+    for (;;) {
+        printf("Task 1 is running\n");
+        vTaskDelay(pdMS_TO_TICKS(1000)); 
+    }
+}
+
+void vTask2(void* pvParameters) {
+    for (;;) {
+        printf("Task 2 is running\n");
+        vTaskDelay(pdMS_TO_TICKS(1000)); 
+    }
+}
+
+void vControlTask(void* pvParameters) {
+    for (;;) {
+        printf("Suspending Task 1\n");
+        vTaskSuspend(xTask1Handle); 
+        vTaskDelay(pdMS_TO_TICKS(5000)); 
+
+        printf("Resuming Task 1\n");
+        vTaskResume(xTask1Handle); 
+        vTaskDelay(pdMS_TO_TICKS(5000));     }
+}
+
+int main(void) {
+
+    xTaskCreate(vTask1, "Task 1", configMINIMAL_STACK_SIZE, NULL, 1, &xTask1Handle);
+    xTaskCreate(vTask2, "Task 2", configMINIMAL_STACK_SIZE, NULL, 1, &xTask2Handle);
+    xTaskCreate(vControlTask, "Control Task", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+
+    vTaskStartScheduler();
+
+    for (;;) {
+    }
+}
