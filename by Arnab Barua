@@ -1,0 +1,502 @@
+By Arnab (21-30)
+2.21 xTaskGetHandle
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task function prototypes
+void vTaskBlink(void* pvParameters);
+void vTaskPrint(void* pvParameters);
+
+// Main function
+int main(void)
+{
+	// Create tasks
+	xTaskCreate(vTaskBlink, "Blink", 1000, NULL, 1, NULL);
+	xTaskCreate(vTaskPrint, "Print", 1000, NULL, 1, NULL);
+
+	// Start the scheduler
+	vTaskStartScheduler();
+
+	// Infinite loop
+	while (1);
+	return 0;
+}
+
+// Task to simulate an LED blinking
+void vTaskBlink(void* pvParameters)
+{
+	const TickType_t xDelay = 500 / portTICK_PERIOD_MS;
+
+	for (;;)
+	{
+    	printf("LED ON\n");
+    	vTaskDelay(xDelay);  // Delay for a period of time
+
+    	printf("LED OFF\n");
+    	vTaskDelay(xDelay);  // Delay for a period of time
+	}
+}
+
+// Task to print a message
+void vTaskPrint(void* pvParameters)
+{
+	const TickType_t xDelay = 1000 / portTICK_PERIOD_MS;
+
+	for (;;)
+	{
+    	printf("Hello from FreeRTOS!\n");
+    	vTaskDelay(xDelay);  // Delay for a period of time
+	}
+}
+
+
+2.22 uxTaskGetNumberOfTasks()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task function prototypes
+void vTaskMonitor(void* pvParameters);
+void vTaskWorker(void* pvParameters);
+
+// Main function
+int main(void)
+{
+	// Create tasks
+	xTaskCreate(vTaskWorker, "Worker1", 1000, NULL, 1, NULL);
+	xTaskCreate(vTaskWorker, "Worker2", 1000, NULL, 1, NULL);
+	xTaskCreate(vTaskMonitor, "Monitor", 1000, NULL, 2, NULL);
+
+	// Start the scheduler
+	vTaskStartScheduler();
+
+	// Infinite loop
+	while (1);
+	return 0;
+}
+
+// Task to monitor and report the number of tasks rapidly
+void vTaskMonitor(void* pvParameters)
+{
+	const TickType_t xDelay = 200 / portTICK_PERIOD_MS;  // Adjusted to 200 ms
+
+	for (;;)
+	{
+    	UBaseType_t uxTasks = uxTaskGetNumberOfTasks();
+    	printf("Total number of running tasks: %u\n", uxTasks);
+    	vTaskDelay(xDelay);  // Short delay
+	}
+}
+
+// Worker task that does minimal work
+void vTaskWorker(void* pvParameters)
+{
+	const TickType_t xDelay = 500 / portTICK_PERIOD_MS;  // Every 500 ms
+
+	for (;;)
+	{
+    	printf("%s is running\n", pcTaskGetName(NULL));
+    	vTaskDelay(xDelay);  // Delay for half a second
+	}
+}
+
+2.23 vTaskGetRunTimeStats ( Not working)
+
+2.24 xTaskGetSchedulerState()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task prototypes
+void vTaskCheckScheduler(void* pvParameters);
+
+int main(void)
+{
+	// Create a task
+	xTaskCreate(vTaskCheckScheduler, "SchedulerChecker", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
+	// Start the scheduler
+	vTaskStartScheduler();
+
+	// Infinite loop (should never reach here)
+	while (1);
+	return 0;
+}
+
+// Task to check and print the scheduler state
+void vTaskCheckScheduler(void* pvParameters)
+{
+	for (;;)
+	{
+    	// Get the current state of the scheduler
+    	switch (xTaskGetSchedulerState()) {
+    	case taskSCHEDULER_RUNNING:
+        	printf("Scheduler is running.\n");
+        	break;
+    	case taskSCHEDULER_SUSPENDED:
+        	printf("Scheduler is suspended.\n");
+        	break;
+    	case taskSCHEDULER_NOT_STARTED:
+        	printf("Scheduler has not started.\n");
+        	break;
+    	default:
+        	printf("Unknown state.\n");
+        	break;
+    	}
+
+    	// Delay for a second
+    	vTaskDelay(pdMS_TO_TICKS(1000));
+	}
+}
+
+
+
+2.25 vTaskStartScheduler()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task function prototypes
+void vTask1(void *pvParameters);
+void vTask2(void *pvParameters);
+
+int main(void)
+{
+	// Create tasks
+	xTaskCreate(vTask1, "Task 1", 1000, NULL, 1, NULL);
+	xTaskCreate(vTask2, "Task 2", 1000, NULL, 2, NULL);
+
+	// Start the scheduler
+	vTaskStartScheduler();
+
+	// Infinite loop (should never be reached)
+	while(1);
+	return 0;
+}
+
+// Task 1 performs a simple print and delay loop
+void vTask1(void *pvParameters)
+{
+	for (;;)
+	{
+    	printf("Task 1 is running\n");
+    	vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1 second
+	}
+}
+
+// Task 2 performs a simple print and delay loop
+void vTask2(void *pvParameters)
+{
+	for (;;)
+	{
+    	printf("Task 2 is running\n");
+    	vTaskDelay(pdMS_TO_TICKS(500)); // Delay for 500 ms
+	}
+}
+
+
+
+2.26 eTaskGetState()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task function prototypes
+void vTaskWorker(void *pvParameters);
+void vTaskMonitor(void *pvParameters);
+
+// Handle for the worker task
+TaskHandle_t xTaskWorkerHandle = NULL;
+
+int main(void)
+{
+	// Create tasks
+	xTaskCreate(vTaskWorker, "Worker", 1000, NULL, 1, &xTaskWorkerHandle);
+	xTaskCreate(vTaskMonitor, "Monitor", 1000, NULL, 2, NULL);
+
+	// Start the scheduler
+	vTaskStartScheduler();
+
+	// Infinite loop (should never reach here)
+	while(1);
+	return 0;
+}
+
+// Worker task that toggles its state between running and blocked
+void vTaskWorker(void *pvParameters)
+{
+	TickType_t xLastWakeTime;
+	const TickType_t xDelay = pdMS_TO_TICKS(2000); // 2-second delay
+
+	// Initialize the xLastWakeTime variable with the current time.
+	xLastWakeTime = xTaskGetTickCount();
+
+	for (;;)
+	{
+    	printf("Worker task is running.\n");
+    	// Delay for the next cycle.
+    	vTaskDelayUntil(&xLastWakeTime, xDelay);
+	}
+}
+
+// Monitor task to check and print the state of the worker task
+void vTaskMonitor(void *pvParameters)
+{
+	for (;;)
+	{
+    	// Get the state of the worker task
+    	eTaskState xTaskState = eTaskGetState(xTaskWorkerHandle);
+
+    	// Print the state
+    	switch (xTaskState) {
+        	case eRunning:
+            	printf("Worker task state: RUNNING\n");
+            	break;
+        	case eReady:
+            	printf("Worker task state: READY\n");
+            	break;
+        	case eBlocked:
+            	printf("Worker task state: BLOCKED\n");
+            	break;
+        	case eSuspended:
+            	printf("Worker task state: SUSPENDED\n");
+            	break;
+        	case eDeleted:
+            	printf("Worker task state: DELETED\n");
+            	break;
+        	default:
+            	printf("Worker task state: UNKNOWN\n");
+            	break;
+    	}
+
+    	// Delay for 1 second
+    	vTaskDelay(pdMS_TO_TICKS(1000));
+	}
+}
+
+
+
+2.27 uxTaskGetSystemState=vTaskStartSchedule
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task function prototypes
+void vTask1(void *pvParameters);
+void vTask2(void *pvParameters);
+
+int main(void)
+{
+	// Create tasks
+	xTaskCreate(vTask1, "LED1 Toggle", 1000, NULL, 1, NULL);
+	xTaskCreate(vTask2, "LED2 Toggle", 1000, NULL, 1, NULL);
+
+	// Start the scheduler
+	vTaskStartScheduler();
+
+	// Infinite loop (should never reach here)
+	while(1);
+	return 0;
+}
+
+void vTask1(void *pvParameters)
+{
+	TickType_t xLastWakeTime = xTaskGetTickCount(); // Initialise the xLastWakeTime variable with the current time.
+	for (;;)
+	{
+    	printf("LED 1 ON\n");
+    	vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
+    	printf("LED 1 OFF\n");
+    	vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(1000));
+	}
+}
+
+void vTask2(void *pvParameters)
+{
+	TickType_t xLastWakeTime = xTaskGetTickCount(); // Initialise the xLastWakeTime variable with the current time.
+	for (;;)
+	{
+    	printf("LED 2 ON\n");
+    	vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(500));
+    	printf("LED 2 OFF\n");
+    	vTaskDelayUntil(&xLastWakeTime, pdMS_TO_TICKS(500));
+	}
+}
+
+
+
+2.28 vTaskGetInfo()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task function prototypes
+void vTask1(void *pvParameters);
+void vTask2(void *pvParameters);
+
+int main(void)
+{
+	// Create tasks
+	xTaskCreate(vTask1, "Task 1", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate(vTask2, "Task 2", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
+	// Start the scheduler
+	vTaskStartScheduler();
+
+	// We should never reach here
+	while(1);
+	return 0;
+}
+
+void vTask1(void *pvParameters)
+{
+	for (;;)
+	{
+    	printf("Task 1 is running\n");
+    	vTaskDelay(pdMS_TO_TICKS(1000));  // Delay for 1 second
+	}
+}
+
+void vTask2(void *pvParameters)
+{
+	for (;;)
+	{
+    	printf("Task 2 is running\n");
+    	vTaskDelay(pdMS_TO_TICKS(500));  // Delay for 500 milliseconds
+	}
+}
+
+
+
+2.29 vTaskSetThreadLocalStoragePointer
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task function prototypes
+void vTaskPrint1(void *pvParameters);
+void vTaskPrint2(void *pvParameters);
+
+int main(void)
+{
+	// Create tasks
+	xTaskCreate(vTaskPrint1, "Print Task 1", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate(vTaskPrint2, "Print Task 2", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
+	// Start the scheduler
+	vTaskStartScheduler();
+
+	// Infinite loop (should never be reached)
+	while(1);
+	return 0;
+}
+
+void vTaskPrint1(void *pvParameters)
+{
+	for (;;)
+	{
+    	printf("Task 1: Running\n");
+    	vTaskDelay(pdMS_TO_TICKS(1000));  // Delay for 1 second
+	}
+}
+
+void vTaskPrint2(void *pvParameters)
+{
+	for (;;)
+	{
+    	printf("Task 2: Running\n");
+    	vTaskDelay(pdMS_TO_TICKS(500));  // Delay for 500 milliseconds
+	}
+}
+
+
+
+2.30 pcTaskGetName()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task function prototypes
+void vTask1(void* pvParameters);
+void vTask2(void* pvParameters);
+
+int main(void)
+{
+	// Create tasks
+	xTaskCreate(vTask1, "Task 1", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate(vTask2, "Task 2", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
+	// Start the scheduler
+	vTaskStartScheduler();
+
+	// Infinite loop (should never be reached)
+	while (1);
+	return 0;
+}
+
+void vTask1(void* pvParameters)
+{
+	TaskHandle_t xHandle = xTaskGetCurrentTaskHandle();
+
+	for (;;)
+	{
+    	// Retrieve and print the task name
+    	printf("API testing: %s\n", pcTaskGetName(xHandle));
+    	vTaskDelay(pdMS_TO_TICKS(1000));  // Delay for 1 second
+	}
+}
+
+void vTask2(void* pvParameters)
+{
+	TaskHandle_t xHandle = xTaskGetCurrentTaskHandle();
+
+	for (;;)
+	{
+    	// Retrieve and print the task name
+    	printf("API tested by AB: %s\n", pcTaskGetName(xHandle));
+    	vTaskDelay(pdMS_TO_TICKS(500));  // Delay for 500 milliseconds
+	}
+}
+
+2.52 vTaskStepTick() - not working
+//After some additional function changing and optimaztion//
+2.52 vTaskStepTick()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task function prototypes
+void vProcessingTask(void *pvParameters);
+
+// Global variable to simulate ticks
+volatile TickType_t simulatedTicks = 0;
+
+int main(void)
+{
+    // Create the processing task
+    xTaskCreate(vProcessingTask, "Processing Task", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+    // Infinite loop (should never be reached)
+    while (1);
+    return 0;
+}
+
+// Processing task that simulates some work and increments a tick count
+void vProcessingTask(void *pvParameters)
+{
+    for (;;)
+    {
+        // Simulate some processing work
+        printf("Processing Task: Performing work...\n");
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Delay to simulate processing
+
+        // Simulate advancing the tick count
+        simulatedTicks += 50; // Increment the simulated tick count by 50
+        printf("Simulated Tick Count: %u\n", (unsigned int)simulatedTicks);
+    }
+}
+
