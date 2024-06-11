@@ -1,0 +1,639 @@
+2.31. xTaskGetTickCount()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+void TickCounterTask(void *pvParameters);
+
+int main(void) {
+
+    printf("Ekaterina Breslavskaya 202212147\n");
+    fflush(stdout);  
+    BaseType_t xReturned;
+    TaskHandle_t xHandle = NULL;
+
+    xReturned = xTaskCreate(
+        TickCounterTask,            
+        "TickCounter",              
+        configMINIMAL_STACK_SIZE,   
+        NULL,                       
+        1,                          
+        &xHandle                    
+    );
+
+    if (xReturned == pdPASS) {
+        vTaskStartScheduler();
+    } else {
+        printf("Task creation failed!\n");
+        fflush(stdout);
+    }
+
+    for (;;);
+}
+
+void TickCounterTask(void *pvParameters) {
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = pdMS_TO_TICKS(1000); 
+
+    xLastWakeTime = xTaskGetTickCount();
+
+    while (1) {
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+        TickType_t tickCount = xTaskGetTickCount();
+        printf("Current tick count: %u\n", (unsigned int) tickCount);
+        printf("Ekaterina Breslavskaya 202212147\n"); 
+        fflush(stdout); 
+    }
+}
+
+
+2.32 xTaskGetTickCountFromISR()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+void ISR_Simulator_Task(void *pvParameters);
+void Regular_Task(void *pvParameters);
+
+int main(void) {
+    printf("Ekaterina Breslavskaya 202212147. Task 2.32\n");
+
+    
+    xTaskCreate(ISR_Simulator_Task, "ISR Simulator", configMINIMAL_STACK_SIZE, NULL, 2, NULL);
+    xTaskCreate(Regular_Task, "Regular Task", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
+    vTaskStartScheduler();
+
+    for (;;);
+}
+
+void ISR_Simulator_Task(void *pvParameters) {
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = pdMS_TO_TICKS(2000); 
+
+    xLastWakeTime = xTaskGetTickCount();
+
+    while (1) {
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+        TickType_t tickCount = xTaskGetTickCountFromISR();
+        printf("Tick count from ISR context: %u\n", (unsigned int)tickCount);
+        printf("Ekaterina Breslavskaya 202212147. Task 2.32\n");
+    }
+}
+
+void Regular_Task(void *pvParameters) {
+    TickType_t xLastWakeTime;
+    const TickType_t xFrequency = pdMS_TO_TICKS(1000); 
+
+    xLastWakeTime = xTaskGetTickCount();
+
+    while (1) {
+        vTaskDelayUntil(&xLastWakeTime, xFrequency);
+
+        printf("Regular task tick count: %u\n", (unsigned int)xTaskGetTickCount());
+    }
+}
+
+
+
+
+2.33 xTaskList()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+void TaskListDisplayTask(void *pvParameters);
+void SampleTask(void *pvParameters);
+
+#define TASK_LIST_BUFFER_SIZE 1024
+
+int main(void) {
+    printf("Ekaterina Breslavskaya 202212147\n");
+    xTaskCreate(TaskListDisplayTask, "TaskListDisplay", configMINIMAL_STACK_SIZE * 2, NULL, 2, NULL);
+    xTaskCreate(SampleTask, "SampleTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    vTaskStartScheduler();
+    for (;;);
+}
+
+void TaskListDisplayTask(void *pvParameters) {
+    char *pcTaskListBuffer;
+    pcTaskListBuffer = pvPortMalloc(TASK_LIST_BUFFER_SIZE); 
+    if (pcTaskListBuffer == NULL) {
+        printf("Failed to allocate buffer for task list.\n");
+        vTaskDelete(NULL); 
+    }
+
+    while (1) {
+        vTaskList(pcTaskListBuffer);
+        
+        printf("%s\n", pcTaskListBuffer);
+        printf("Ekaterina Breslavskaya 202212147\n");
+
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+
+    vPortFree(pcTaskListBuffer); // Clean up the allocated buffer if ever exiting the loop
+}
+
+void SampleTask(void *pvParameters) {
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(1000));
+    }
+}
+
+
+
+2.34 xTaskNotify()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task Handlers
+TaskHandle_t notifierTaskHandle = NULL;
+TaskHandle_t notifiedTaskHandle = NULL;
+
+// Task Function Prototypes
+void NotifierTask(void *pvParameters);
+void NotifiedTask(void *pvParameters);
+
+int main(void) {
+    // Display the initial message
+    printf("Ekaterina Breslavskaya 202212147\n");
+
+    // Create tasks
+    xTaskCreate(NotifierTask, "Notifier", configMINIMAL_STACK_SIZE, NULL, 2, &notifierTaskHandle);
+    xTaskCreate(NotifiedTask, "Notified", configMINIMAL_STACK_SIZE, NULL, 1, &notifiedTaskHandle);
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+    // If the scheduler starts, the following line should never be reached.
+    for (;;) ;
+    return 0;
+}
+
+void NotifierTask(void *pvParameters) {
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1 second
+        // Send a simple notification to NotifiedTask
+        xTaskNotify(notifiedTaskHandle, 0, eNoAction); // No value being sent, just a notification
+    }
+}
+
+void NotifiedTask(void *pvParameters) {
+    uint32_t ulNotificationValue;
+
+    while (1) {
+        // Wait indefinitely for a notification
+        if (xTaskNotifyWait(0x00, ULONG_MAX, &ulNotificationValue, portMAX_DELAY) == pdPASS) {
+            // Print the message upon receiving any notification
+            printf("Ekaterina Breslavskaya 202212147\n");
+        }
+    }
+}
+
+
+
+2.35. xTaskNotifyAndQuery()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task Handlers
+TaskHandle_t notifierTaskHandle = NULL;
+TaskHandle_t notifiedTaskHandle = NULL;
+
+// Task Function Prototypes
+void NotifierTask(void *pvParameters);
+void NotifiedTask(void *pvParameters);
+
+int main(void) {
+    // Display the initial message
+    printf("Ekaterina Breslavskaya 202212147\n");
+
+    // Create tasks
+    xTaskCreate(NotifierTask, "Notifier", configMINIMAL_STACK_SIZE, NULL, 2, &notifierTaskHandle);
+    xTaskCreate(NotifiedTask, "Notified", configMINIMAL_STACK_SIZE, NULL, 1, &notifiedTaskHandle);
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+    // If the scheduler starts, the following line should never be reached.
+    for (;;) ;
+    return 0;
+}
+
+void NotifierTask(void *pvParameters) {
+    uint32_t ulValueToSend = 10;  // Example value to send
+    uint32_t ulPreviousNotificationValue = 0;
+
+    while (1) {
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1 second
+        
+        // Send a notification and query the previous notification value
+        xTaskNotifyAndQuery(notifiedTaskHandle, ulValueToSend, eSetValueWithOverwrite, &ulPreviousNotificationValue);
+        
+        // Optionally print the previous notification value received by the task
+        printf("Previous notification value was: %lu\n", ulPreviousNotificationValue);
+    }
+}
+
+void NotifiedTask(void *pvParameters) {
+    uint32_t ulNotificationValue;
+
+    while (1) {
+        // Wait indefinitely for a notification
+        if (xTaskNotifyWait(0x00, ULONG_MAX, &ulNotificationValue, portMAX_DELAY) == pdPASS) {
+            // Print the message upon receiving any notification
+            printf("Notified task received value: %lu\n", ulNotificationValue);
+            printf("Ekaterina Breslavskaya 202212147\n");
+        }
+    }
+}
+
+
+
+2.36 xTaskNotifyAndQueryFromISR()
+#include "FreeRTOS.h"
+#include "task.h"
+#include "timers.h" // Include timers for software timer simulation
+#include <stdio.h>
+
+// Task Handle
+TaskHandle_t taskHandle = NULL;
+
+// Task Function Prototype
+void TaskFunction(void* pvParameters);
+
+// Timer callback function prototype
+void TimerCallback(TimerHandle_t xTimer);
+
+int main(void) {
+    // Display the initial message
+    printf("Ekaterina Breslavskaya 202212147. Task 2.36\n");
+
+    // Create the task
+    if (xTaskCreate(TaskFunction, "Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, &taskHandle) != pdPASS) {
+        printf("Task creation failed!\n");
+        return 1; // Return an error code if task creation failed
+    }
+
+    // Create a software timer that triggers the TimerCallback function
+    TimerHandle_t timer = xTimerCreate("Timer", pdMS_TO_TICKS(1000), pdTRUE, (void*)0, TimerCallback);
+    if (timer == NULL) {
+        printf("Timer creation failed!\n");
+        return 1; // Return an error code if timer creation failed
+    }
+
+    // Start the timer
+    if (xTimerStart(timer, 0) != pdPASS) {
+        printf("Failed to start the timer.\n");
+        return 1; // Return an error code if timer start failed
+    }
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+    // If the scheduler starts, this line should never be reached
+    printf("Failed to start the scheduler. Out of heap memory?\n");
+    return 2; // Return an error code indicating scheduler start failure
+}
+
+// Task function that waits for notifications
+void TaskFunction(void* pvParameters) {
+    (void) pvParameters; // To prevent the 'unreferenced parameter' warning
+
+    uint32_t ulNotificationValue;
+
+    while (1) {
+        // Wait indefinitely for a notification
+        if (xTaskNotifyWait(0x00, 0xFFFFFFFF, &ulNotificationValue, portMAX_DELAY) == pdPASS) {
+            // Print the message upon receiving a notification
+            printf("Notification received: %lu\n", ulNotificationValue);
+            printf("Ekaterina Breslavskaya 202212147. Task 2.36\n");
+        }
+    }
+}
+
+// Timer callback function simulating an ISR
+void TimerCallback(TimerHandle_t xTimer) {
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+    uint32_t ulPreviousNotificationValue;
+
+    // Notify the task from the simulated ISR and query the previous notification value
+    xTaskNotifyAndQueryFromISR(taskHandle, 1, eSetBits, &ulPreviousNotificationValue, &xHigherPriorityTaskWoken);
+
+    // Request a context switch if a higher priority task was woken
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+
+    printf("ISR: Previous notification value was %lu\n", ulPreviousNotificationValue);
+}
+
+
+
+
+
+2.37 xTaskNotifyFromISR()
+#include "FreeRTOS.h"
+#include "task.h"
+#include "timers.h" // Include timers for software timer simulation
+#include <stdio.h>
+
+// Task Handle
+TaskHandle_t taskHandle = NULL;
+
+// Task Function Prototype
+void TaskFunction(void* pvParameters);
+
+// Timer callback function prototype
+void TimerCallback(TimerHandle_t xTimer);
+
+int main(void) {
+    // Display the initial message
+    printf("Ekaterina Breslavskaya 202212147. Task 2.37\n");
+
+    // Create the task
+    if (xTaskCreate(TaskFunction, "Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, &taskHandle) != pdPASS) {
+        printf("Task creation failed!\n");
+        return 1; // Return an error code if task creation failed
+    }
+
+    // Create a software timer that triggers the TimerCallback function
+    TimerHandle_t timer = xTimerCreate("Timer", pdMS_TO_TICKS(1000), pdTRUE, (void*)0, TimerCallback);
+    if (timer == NULL) {
+        printf("Timer creation failed!\n");
+        return 1; // Return an error code if timer creation failed
+    }
+
+    // Start the timer
+    if (xTimerStart(timer, 0) != pdPASS) {
+        printf("Failed to start the timer.\n");
+        return 1; // Return an error code if timer start failed
+    }
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+    // If the scheduler starts, this line should never be reached
+    printf("Failed to start the scheduler. Out of heap memory?\n");
+    return 2; // Return an error code indicating scheduler start failure
+}
+
+// Task function that waits for notifications
+void TaskFunction(void* pvParameters) {
+    (void) pvParameters; // To prevent the 'unreferenced parameter' warning
+
+    uint32_t ulNotificationValue;
+
+    while (1) {
+        // Wait indefinitely for a notification
+        if (xTaskNotifyWait(0x00, 0xFFFFFFFF, &ulNotificationValue, portMAX_DELAY) == pdPASS) {
+            // Print the message upon receiving a notification
+            printf("Notification received: %lu\n", ulNotificationValue);
+            printf("Ekaterina Breslavskaya 202212147. Task 2.37\n");
+        }
+    }
+}
+
+// Timer callback function simulating an ISR
+void TimerCallback(TimerHandle_t xTimer) {
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Notify the task from the simulated ISR
+    xTaskNotifyFromISR(taskHandle, 0x01, eIncrement, &xHigherPriorityTaskWoken);
+
+    // Request a context switch if a higher priority task was woken
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+
+
+
+2.38. xTaskNotifyGive()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task Handlers
+TaskHandle_t notifierTaskHandle = NULL;
+TaskHandle_t notifiedTaskHandle = NULL;
+
+// Task Function Prototypes
+void NotifierTask(void *pvParameters);
+void NotifiedTask(void *pvParameters);
+
+int main(void) {
+    // Display initial message
+    printf("Ekaterina Breslavskaya 202212147\n");
+
+    // Create tasks
+    xTaskCreate(NotifierTask, "NotifierTask", configMINIMAL_STACK_SIZE, NULL, 2, &notifierTaskHandle);
+    xTaskCreate(NotifiedTask, "NotifiedTask", configMINIMAL_STACK_SIZE, NULL, 1, &notifiedTaskHandle);
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+    // Infinite loop to prevent exiting `main`
+    for (;;);
+    return 0;
+}
+
+void NotifierTask(void *pvParameters) {
+    while (1) {
+        // Periodically give notification every second
+        vTaskDelay(pdMS_TO_TICKS(1000));
+        xTaskNotifyGive(notifiedTaskHandle);
+        printf("Notifier: Notification given.\n");
+    }
+}
+
+void NotifiedTask(void *pvParameters) {
+    while (1) {
+        // Wait indefinitely for a notification
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+        printf("Notified: Notification received.\n");
+        printf("Ekaterina Breslavskaya 202212147\n");
+    }
+}
+
+
+
+2.39 xTaskNotifyGiveFromISR()
+#include "FreeRTOS.h"
+#include "task.h"
+#include "timers.h" // Include timers for software timer simulation
+#include <stdio.h>
+
+// Task Handle
+TaskHandle_t taskHandle = NULL;
+
+// Task Function Prototype
+void TaskFunction(void* pvParameters);
+
+// Timer callback function prototype
+void TimerCallback(TimerHandle_t xTimer);
+
+// Main function
+int main(void) {
+    // Display the initial message
+    printf("Ekaterina Breslavskaya 202212147. Task 2.39\n");
+
+    // Create the task
+    if (xTaskCreate(TaskFunction, "Task", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1, &taskHandle) != pdPASS) {
+        printf("Task creation failed!\n");
+        return 1; // Return an error code if task creation failed
+    }
+
+    // Create a software timer that triggers the TimerCallback function
+    TimerHandle_t timer = xTimerCreate("Timer", pdMS_TO_TICKS(1000), pdTRUE, (void*)0, TimerCallback);
+    if (timer == NULL) {
+        printf("Timer creation failed!\n");
+        return 1; // Return an error code if timer creation failed
+    }
+
+    // Start the timer
+    if (xTimerStart(timer, 0) != pdPASS) {
+        printf("Failed to start the timer.\n");
+        return 1; // Return an error code if timer start failed
+    }
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+    // If the scheduler starts, this line should never be reached
+    printf("Failed to start the scheduler. Out of heap memory?\n");
+    return 2; // Return an error code indicating scheduler start failure
+}
+
+// Task function that waits for notifications
+void TaskFunction(void* pvParameters) {
+    (void) pvParameters; // To prevent the 'unreferenced parameter' warning
+
+    while (1) {
+        // Wait indefinitely for a notification
+        ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+
+        // Print the message upon receiving a notification
+        printf("Notification received\n");
+        printf("Ekaterina Breslavskaya 202212147. Task 2.39\n");
+    }
+}
+
+// Timer callback function simulating an ISR
+void TimerCallback(TimerHandle_t xTimer) {
+    BaseType_t xHigherPriorityTaskWoken = pdFALSE;
+
+    // Notify the task from the simulated ISR
+    vTaskNotifyGiveFromISR(taskHandle, &xHigherPriorityTaskWoken);
+
+    // Request a context switch if a higher priority task was woken
+    portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
+}
+
+
+
+
+
+2.40 xTaskNotifyStateClear()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task Handlers
+TaskHandle_t notifiedTaskHandle = NULL;
+
+// Function Prototypes
+void NotifiedTask(void *pvParameters);
+
+int main(void) {
+    // Display the initial message
+    printf("Ekaterina Breslavskaya 202212147\n");
+
+    // Create the task that will receive and clear notifications
+    xTaskCreate(NotifiedTask, "NotifiedTask", configMINIMAL_STACK_SIZE, NULL, 1, &notifiedTaskHandle);
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+    // Infinite loop to prevent exiting `main`
+    for (;;);
+    return 0;
+}
+
+void NotifiedTask(void *pvParameters) {
+    uint32_t ulNotificationValue = 0;
+
+    while (1) {
+        // Wait indefinitely for a notification
+        if (xTaskNotifyWait(0, ULONG_MAX, &ulNotificationValue, portMAX_DELAY) == pdPASS) {
+            printf("Notification received: %lu\n", ulNotificationValue);
+            printf("Ekaterina Breslavskaya 202212147\n");
+
+            // Clear notification state after processing
+            xTaskNotifyStateClear(NULL);
+        }
+    }
+}
+
+// Additional function to simulate notifying the task, could be placed in a timer or another task
+void SimulateNotification(void) {
+    const TickType_t xDelay = pdMS_TO_TICKS(5000);  // 5 seconds delay
+
+    while (1) {
+        vTaskDelay(xDelay);
+        // Notify the task with a value incrementing each time
+        xTaskNotify(notifiedTaskHandle, 1, eIncrement);
+    }
+}
+
+
+
+
+2.55 taskYIELD()
+#include "FreeRTOS.h"
+#include "task.h"
+#include <stdio.h>
+
+// Task Function Prototypes
+void Task1(void* pvParameters);
+void Task2(void* pvParameters);
+
+int main(void) {
+    // Display the initial message
+    printf("Starting FreeRTOS application\n");
+
+    // Create two tasks
+    xTaskCreate(Task1, "Task1", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+    xTaskCreate(Task2, "Task2", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
+    // Start the scheduler
+    vTaskStartScheduler();
+
+    // If the scheduler starts, this line should never be reached
+    printf("Failed to start the scheduler. Out of heap memory?\n");
+    return 1; // Return an error code indicating scheduler start failure
+}
+
+// Task1 function
+void Task1(void* pvParameters) {
+    (void) pvParameters; // To prevent the 'unreferenced parameter' warning
+
+    while (1) {
+        printf("Task1 is running. Yielding to Task2.\n");
+        printf("Ekaterina Breslavskaya 202212147. Task 2.55\n");
+        taskYIELD(); // Yield to Task2
+    }
+}
+
+// Task2 function
+void Task2(void* pvParameters) {
+    (void) pvParameters; // To prevent the 'unreferenced parameter' warning
+
+    while (1) {
+        printf("Task2 is running. Yielding to Task1.\n");
+        printf("Ekaterina Breslavskaya 202212147. Task 2.55\n");
+        taskYIELD(); // Yield to Task1
+    }
+}
